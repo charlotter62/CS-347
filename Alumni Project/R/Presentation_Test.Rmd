@@ -1,0 +1,362 @@
+---
+title: "Simmons Alumni on the Map"
+author: Charlotte Rivard
+date: April 29, 2019 
+output: slidy_presentation
+---
+
+```{r echo=FALSE}
+#Import Dataset
+#Alumni <- read.csv("AlumniClean.csv")
+Alumni <- read.csv("Alumni.csv")
+
+#Cleaning Dataset
+  #Creating location variable
+Alumni$loc<-paste0(Alumni$City,", ",Alumni$State)
+  #Fixing dead
+Alumni$Dead <- ifelse(Alumni$Dead=="Yes", 1 , 0)
+```
+
+```{r include=FALSE}
+#Load Packages?
+library(mosaic)
+library(ggplot2)
+library(dplyr)
+library(rjson)
+library(jsonlite)
+library(leaflet)
+library(RCurl)
+library(ggmap)
+library(DT)
+library(kableExtra)
+```
+
+## Data Source
+
+- Dataset from the Simmons Alumnae/i Office 
+    + Data queries are available by request!
+    + Information provided without names of alumni
+- Jasmine Clark ‘15
+    + Assistant Director, Career Development and Education
+    + Met to discuss the project with her 
+    
+```{r echo=FALSE}
+knitr::include_graphics('simmons alumni association.png')
+#https://www.rdocumentation.org/packages/knitr/versions/1.22/topics/include_graphics
+```
+
+## Demographic Variables
+
+- ID
+    + Unique identifier of each alumni
+- Deceased?
+    + Changed to "Dead"
+    + Made 0/1 from "yes"/"no"
+        +
+            +
+```{r echo=FALSE}
+t <- data.frame(round(tally(Alumni$Dead, "percent"),2))
+rownames(t) <- c("Alive", "Dead")
+names(t) <- c("Dead?","Perc")
+#datatable(t, rownames=FALSE)
+t %>%
+  kable() %>%
+  kable_styling()
+```
+- Age
+    +
+        +
+            +
+```{r echo=FALSE, messages=FALSE, warning=FALSE}
+ggplot(Alumni, aes(x = as.numeric(Alumni$Age))) +
+  geom_histogram(binwidth=3) + labs(title="Histogram of Alumni Age", x="Alumni Age", y="Frequency")
+#datatable(favstats(Alumni$Age), rownames=FALSE)
+f<- favstats(Alumni$Age)
+f %>%
+  kable() %>%
+  kable_styling()
+```
+
+- Gender
+    +
+        +
+            +
+```{r echo=FALSE}
+t <- data.frame(round(tally(Alumni$Gender, "percent"),2))
+names(t) <- c("Gender","%")
+#datatable(t, rownames=FALSE)
+t %>%
+  kable() %>%
+  kable_styling()
+```
+
+- Race/Ethnicity
+    + Changed to "Race"
+        +
+            +
+```{r echo=FALSE}
+t <- data.frame(round(tally(Alumni$Race, "percent"),2))
+names(t) <- c("Race","Perc")
+t <-t[order(-t$Perc),]
+#datatable(t, rownames=FALSE)
+t %>%
+  kable() %>%
+  kable_styling()
+```
+
+## The Data: Education Variables
+- Class
+    + What year they graduated
+        +
+            +
+```{r echo=FALSE, warning=FALSE}
+t <- data.frame(round(tally(Alumni$Class),2))
+names(t) <- c("Class Year","Count")
+t <-t[order(-t$Count),]
+biggestClasses <- head(t)
+#datatable(biggestClasses, rownames=FALSE)
+
+ggplot(Alumni, aes(x = Alumni$Class)) +
+  geom_histogram(binwidth=5) + labs(x="Graduation Class", y= "Frequency",title="Simmons Alumni Class Sizes")
+
+biggestClasses %>%
+  kable() %>%
+  kable_styling()
+```
+
+- Major 1
+- Major 2
+    + 
+        +
+            +
+```{r echo=FALSE}
+t <- data.frame(round(tally(Alumni$Major1, "percent"),2))
+names(t) <- c("Major 1","Perc")
+t <-t[order(-t$Perc),]
+topMajors <- head(t)
+#datatable(topMajors, rownames=FALSE)
+
+barplot(topMajors$Perc, xlab= "Top Majors", names.arg=c("Nursing", "Communications", "Education", "Psychology", "Management","English"), main="Top Majors of Simmons Alumni")
+
+topMajors %>%
+  kable() %>%
+  kable_styling()
+```
+
+
+- Minor 1
+- Minor 2
+    + 
+        +
+            +
+```{r echo=FALSE}
+t <- data.frame(round(tally(Alumni$Minor1, "percent"),2))
+names(t) <- c("Minor 1","Perc")
+t <-t[order(-t$Perc),]
+topMinors <- t[2:7,]
+#datatable(topMinors, rownames=FALSE)
+barplot(topMinors$Perc, xlab= "Top Minors", main="Top Minors of Simmons Alumni", names.arg=c("Psychology", "Biology", "Economics", "Chemistry", "English","Political Science"))
+
+topMinors %>%
+  kable() %>%
+  kable_styling()
+```
+
+
+## The Data: Career Variables
+- Position
+    + Their job title/role
+
+- Profession
+    + Generalized role like "nurse", mostly missing
+        +
+            +
+```{r echo=FALSE}
+t <- data.frame(round(tally(Alumni$Profession, "percent"),2))
+names(t) <- c("Profession","Perc")
+t <-t[order(-t$Perc),]
+topProf <- t[2:7,]
+
+barplot(topProf$Perc, xlab= "Profession", main="Top Professions of Simmons Alumni", names.arg=c("Nurse", "Attorney", "Social Work", "Physical Therapist", "Real Estate Broker","Librarian")) 
+
+#datatable(topProf, rownames=FALSE)
+topProf %>%
+  kable() %>%
+  kable_styling()
+```
+
+- Industry
+    + Categorical 
+        +
+            +
+```{r echo=FALSE}
+t <- data.frame(round(tally(Alumni$Industry, "percent"),2))
+names(t) <- c("Industry","Perc")
+t <-t[order(-t$Perc),]
+topInd <- t[2:7,]
+
+barplot(topInd$Perc, xlab= "Industries", main="Top Industries of Simmons Alumni", names.arg=c("Healthcare", "Education-Higher", "Education-Primary/Secondary", "Advertising/Public Relations/Marketing", "Health/Fitness","Pharmaceutical/Biotechnology"))  
+
+#datatable(topInd, rownames=FALSE)
+topInd %>%
+  kable() %>%
+  kable_styling()
+
+```
+
+## The Data: Location Variables
+- City 
+    + At least 3,751 different cities!
+```{r echo=FALSE}
+n = nrow(data.frame(unique(Alumni$loc)))
+```
+
+- State
+- These were merged in R to one column named "loc"
+    + "{City}, {State}" 
+        +
+            +
+```{r echo=FALSE}
+t <- data.frame(round(tally(Alumni$State, "percent"),2))
+names(t) <- c("State","Perc")
+t <-t[order(-t$Perc),]
+topStates <- head(t)
+barplot(topStates$Perc, xlab= "State", main="Top States of Simmons Alumni", names.arg=c("MA", "NY", "CA", "CT", "NH","FL")) 
+
+#datatable(topStates, rownames=FALSE)
+topStates %>%
+  kable() %>%
+  kable_styling()
+
+```
+    
+## The Data: Missing Values
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+Missing <- data.frame(c("Age", "Gender", "Race", "Major 1", "Major 2", "Minor 1", "Minor 2", "Position", "Profession", "Industry", "Loc"))
+names(Missing)<- "Variable"
+Missing$missing <- 0
+Missing$missing[1] <- sum(Alumni$Age=="")
+Missing$missing[2] <- sum(Alumni$Gender=="")
+Missing$missing[3] <- sum(Alumni$Race=="")
+Missing$missing[4] <- sum(Alumni$Major1=="")
+Missing$missing[5] <- sum(Alumni$Major2=="")
+Missing$missing[6] <- sum(Alumni$Minor1=="")
+Missing$missing[7] <- sum(Alumni$Minor2=="")
+Missing$missing[8] <- sum(Alumni$Position=="")
+Missing$missing[9] <- sum(Alumni$Profession=="")
+Missing$missing[10] <- sum(Alumni$Industry=="")
+Missing$missing[11] <- sum(Alumni$loc==", ")
+
+Missing$Perc <- round((Missing$missing/(nrow(Alumni))*100),2)
+Missing <- Missing[order(-Missing$missing),]
+
+#datatable(Missing)
+Missing %>%
+  kable() %>%
+  kable_styling()
+```
+
+## Analysis: Nursing
+```{r echo=FALSE, include=FALSE, warning=FALSE}
+Alumni$Nurse <- 0
+for(i in 1:nrow(Alumni)){
+  if((grepl("Nurse", Alumni$Position[i]))){
+    Alumni$Nurse[i] <- 1
+  }
+  if((grepl("Nurse", Alumni$Profession[i]))){
+    Alumni$Nurse[i] <- 1
+  }
+}
+nurses <- Alumni[Alumni$Nurse==1,]
+nrow(nurses)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#register_google(key="AIzaSyBi_XJ_z1Zq37QfjN5-lbNgm9UVclJnq9U")
+#Located <- as.data.frame(nurses[nurses$loc!=", ",]) #getting nurses on the map
+#l <- Located$loc
+#Located$loc <- as.character(l)
+#Lats_Longs <- mutate_geocode(Located, loc)
+
+#^^This portion was saved as a csv and then blocked out bc it takes so long
+
+#write.csv(Lats_Longs, "Lats_Longs.csv")
+Lats_Longs <- read.csv("Lats_Longs.csv")
+#source- https://www.jessesadler.com/post/geocoding-with-r/
+```
+
+- Leaflet Map
+    + 856 nurses live in New England, of the 1073 identified and located!(~80%)
+    
+```{r echo=FALSE}
+#Adapted from: 
+#https://www.earthdatascience.org/courses/earth-analytics/get-data-using-apis/leaflet-r/
+
+example_alumni_map <- leaflet()
+example_alumni_map <- addTiles(example_alumni_map)
+example_alumni_map <- addMarkers(example_alumni_map, lng= Lats_Longs$lon, lat= Lats_Longs$lat)
+#example_alumni_map <- setView(example_alumni_map, lng = 94.5786, lat = 39.0997, zoom = 13)
+example_alumni_map
+```
+
+```{r echo=FALSE}
+nd <- data.frame(tally(nurses$State))
+nd <- nd[order(-nd$Freq),]
+names(nd) <- c("State", "Freq")
+
+head(nd) %>%
+  kable() %>%
+  kable_styling()
+
+s= sum(nurses$State=="MA"|nurses$State=="NH"|nurses$State=="VT"| nurses$State=="CT"| nurses$State=="ME"|nurses$State=="RI")
+```
+
+
+-Chloropleth Map
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+#Adapted from https://plot.ly/r/choropleth-maps/
+library(plotly)
+
+# give state boundaries a white border
+l <- list(color = toRGB("white"), width = 2)
+# specify some map projection/options
+g <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showlakes = TRUE,
+  lakecolor = toRGB('white')
+)
+
+p <- plot_geo(nd, locationmode = 'USA-states') %>%
+  add_trace(
+    z = ~Freq, locations = ~State,
+    color = ~Freq, colors = 'Purples'
+  ) %>%
+  colorbar(title = "#Simmons Nurses") %>%
+  layout(
+    title = 'Simmons Nurses 1960-Today',
+    geo = g
+  )
+p
+```
+
+-Bureau of Labor Statistics Comparisons
+
+```{r echo=FALSE}
+knitr::include_graphics('Nurses Income.png', dpi=100)
+```
+
+
+##Thank you!
+- Future Work
+    + Look at more Majors
+    + Look at specific states
+    + Examine landmarks (ie. Hospitals)
+    + Use natural language processing
+- Play around with the map!
+    + https://drive.google.com/open?id=12xt3gL0mghM6vz5LfRU0Y8JjWlKbTUMn&usp=sharing
+```{r echo=FALSE}
+knitr::include_graphics('Simmons Alumni.png')
+```
+
