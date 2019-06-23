@@ -1,1 +1,4 @@
+In examining waste trends at Simmons, I created a flex dashboard to display my findings. This file is called 
+Simmons_Recycling_flexdashboard.Rmd
 
+To run the dashboard you should have R studio installed, download the whole folder, and knit the file
